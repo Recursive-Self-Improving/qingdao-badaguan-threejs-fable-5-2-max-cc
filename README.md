@@ -31,6 +31,14 @@ npm start                  # → http://127.0.0.1:5173/
 
 建議使用桌面版 Chrome / Edge / Firefox / Safari（需 WebGL 2）。畫質會依機器效能自動調整，也可在右上角手動切換。
 
+## 部署至 GitHub Pages
+
+1. 在 GitHub 儲存庫的 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**。
+2. 將變更推送至 `master`，或在 **Actions → Deploy GitHub Pages → Run workflow** 手動執行。
+3. 工作流程會以 Node.js 22 執行 `npm ci` 與 `npm run build`，僅發布 `index.html` 和 `dist/app.js`；部署網址可在工作流程的 `github-pages` environment 中查看。
+
+設定檔：`.github/workflows/deploy-pages.yml`。頁面使用相對路徑，支援 GitHub Pages 的儲存庫子路徑，不需要設定 base URL。若更改預設分支名稱，也需更新工作流程的 `push.branches`。
+
 ## 操作
 
 | 按鍵 | 動作 |
