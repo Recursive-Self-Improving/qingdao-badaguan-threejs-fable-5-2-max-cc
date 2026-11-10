@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="description" content="青島八大關 — 一座可以自由漫步的 three.js 互動景觀：紅瓦綠樹、碧海藍天，一關一樹。" />
+    <meta name="theme-color" content="#0f1213" />
+    <title>青島 · 八大關</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23b3261e'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='%23f6eedc' font-family='serif'%3E關%3C/text%3E%3C/svg%3E" />
+    <style>
+      :root {
+        --ink: #0f1213;
+        --paper: #f4ecdc;
+        --paper-dim: rgba(244, 236, 220, 0.66);
+        --gold: #e0ad4a;
+        --seal: #b3261e;
+        --line: rgba(244, 236, 220, 0.22);
+        --glass: rgba(15, 18, 19, 0.46);
+        --serif: 'Songti TC', 'Noto Serif TC', 'Noto Serif CJK TC', 'Source Han Serif TC', 'Source Han Serif', 'PMingLiU', 'MingLiU', 'Songti SC', 'SimSun', 'WenQuanYi Zen Hei', serif;
+        --sans: 'PingFang TC', 'Noto Sans TC', 'Noto Sans CJK TC', 'Microsoft JhengHei', 'Heiti TC', 'WenQuanYi Zen Hei', system-ui, sans-serif;
+        --latin: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--ink);
+        color: var(--paper);
+        overflow: hidden;
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        cursor: pointer;
+      }
+      #scene {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        outline: none;
+      }
+
+      /* ------------------------------------------------------------------ intro */
+      #intro {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: end;
+        padding: clamp(20px, 5vw, 72px);
+        background:
+          linear-gradient(90deg, rgba(10, 12, 13, 0.82) 0%, rgba(10, 12, 13, 0.5) 34%, rgba(10, 12, 13, 0) 66%),
+          linear-gradient(0deg, rgba(10, 12, 13, 0.6) 0%, rgba(10, 12, 13, 0) 42%);
+        transition: opacity 1.3s ease, visibility 1.3s;
+      }
+      #intro.loading {
+        background: var(--ink);
+      }
+      #intro.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+      .intro-inner {
+        display: flex;
+        gap: clamp(20px, 3.2vw, 46px);
+        align-items: flex-end;
+        max-width: 780px;
+      }
+      .title {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        flex: none;
+      }
+      .title h1 {
+        /* one character per line — a vertical title that does not depend on writing-mode support */
+        display: flex;
+        flex-direction: column;
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: clamp(64px, 11.5vh, 128px);
+        line-height: 1.1;
+        margin: 0;
+        text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45);
+      }
+      .title h1 span {
+        display: block;
+      }
+      .title .side {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        align-items: center;
+        padding-top: 8px;
+      }
+      .seal {
+        writing-mode: vertical-rl;
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 17px;
+        letter-spacing: 0.12em;
+        color: var(--paper);
+        background: var(--seal);
+        padding: 9px 5px 6px;
+        border-radius: 3px;
+        box-shadow: inset 0 0 0 1.5px rgba(244, 236, 220, 0.55), 0 4px 18px rgba(0, 0, 0, 0.3);
+      }
+      .title .en {
+        writing-mode: vertical-rl;
+        font-family: var(--latin);
+        font-style: italic;
+        font-size: 15px;
+        letter-spacing: 0.34em;
+        color: var(--paper-dim);
+        text-transform: uppercase;
+      }
+      .copy {
+        padding-bottom: 6px;
+        min-width: 0;
+      }
+      .copy .kicker {
+        font-family: var(--latin);
+        font-style: italic;
+        letter-spacing: 0.3em;
+        font-size: 13px;
+        color: var(--gold);
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      .copy p.lead {
+        font-family: var(--serif);
+        font-size: clamp(17px, 2.1vh, 22px);
+        line-height: 1.95;
+        letter-spacing: 0.08em;
+        margin: 0 0 8px;
+        text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
+      }
+      .copy p.sub {
+        font-size: 13.5px;
+        line-height: 1.9;
+        color: var(--paper-dim);
+        letter-spacing: 0.04em;
+        margin: 0 0 26px;
+        max-width: 31em;
+      }
+      #start {
+        position: relative;
+        font-family: var(--serif);
+        font-size: 19px;
+        letter-spacing: 0.4em;
+        padding: 15px 30px 15px 38px;
+        border: 1px solid var(--gold);
+        color: var(--paper);
+        background: rgba(224, 173, 74, 0.1);
+        transition: background 0.35s, color 0.35s, opacity 0.6s, transform 0.35s;
+      }
+      #start:hover:not(:disabled) {
+        background: var(--gold);
+        color: var(--ink);
+        transform: translateY(-1px);
+      }
+      #start:disabled {
+        opacity: 0.4;
+        cursor: progress;
+        border-color: var(--line);
+      }
+      #progress {
+        margin-top: 20px;
+        width: min(320px, 70vw);
+        height: 1px;
+        background: var(--line);
+        transition: opacity 0.8s;
+      }
+      #loadbar {
+        height: 100%;
+        background: var(--gold);
+        transform-origin: left;
+        transform: scaleX(0);
+        transition: transform 0.35s ease;
+      }
+      #loadlabel {
+        margin-top: 10px;
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        color: var(--paper-dim);
+        min-height: 1.4em;
+      }
+      .keys {
+        margin-top: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-size: 12.5px;
+        color: var(--paper-dim);
+        letter-spacing: 0.06em;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 1.9em;
+        padding: 2px 6px;
+        margin-right: 5px;
+        text-align: center;
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 11px;
+        color: var(--paper);
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        background: rgba(244, 236, 220, 0.06);
+      }
+      .date-note {
+        position: absolute;
+        right: clamp(20px, 5vw, 72px);
+        bottom: clamp(20px, 5vw, 72px);
+        font-family: var(--latin);
+        font-style: italic;
+        font-size: 13px;
+        letter-spacing: 0.16em;
+        color: var(--paper-dim);
+        text-align: right;
+        line-height: 1.7;
+      }
+
+      /* ------------------------------------------------------------------ HUD */
+      #hud {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 1.2s ease;
+      }
+      #hud.on {
+        opacity: 1;
+      }
+      #hud.photo > * {
+        opacity: 0 !important;
+      }
+      #hud .panel {
+        pointer-events: auto;
+      }
+      #hud.photo .panel {
+        pointer-events: none;
+      }
+      #place {
+        position: absolute;
+        left: clamp(16px, 3vw, 40px);
+        top: clamp(16px, 3vw, 36px);
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        opacity: 0;
+        transform: translateY(-6px);
+        transition: opacity 0.9s ease, transform 0.9s ease;
+        text-shadow: 0 1px 16px rgba(0, 0, 0, 0.6), 0 0 3px rgba(0, 0, 0, 0.55);
+        padding: 12px 44px 14px 0;
+        background: radial-gradient(120% 140% at 0% 40%, rgba(10, 12, 13, 0.5) 0%, rgba(10, 12, 13, 0.24) 45%, rgba(10, 12, 13, 0) 78%);
+      }
+      #place.show {
+        opacity: 1;
+        transform: none;
+      }
+      #place .bar {
+        width: 3px;
+        align-self: stretch;
+        background: var(--gold);
+        border-radius: 2px;
+      }
+      #place .name {
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: clamp(26px, 3.6vh, 38px);
+        letter-spacing: 0.16em;
+        line-height: 1.15;
+      }
+      #place .en {
+        font-family: var(--latin);
+        font-style: italic;
+        font-size: 14px;
+        letter-spacing: 0.14em;
+        color: var(--paper-dim);
+        margin-top: 4px;
+      }
+      #place .note {
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        margin-top: 8px;
+        color: var(--paper);
+      }
+      #place .note b {
+        color: var(--gold);
+        font-weight: 600;
+        margin-right: 0.5em;
+      }
+
+      #controls {
+        position: absolute;
+        right: clamp(12px, 2.4vw, 32px);
+        top: clamp(12px, 2.4vw, 28px);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .seg {
+        display: flex;
+        background: var(--glass);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .seg button {
+        font-family: var(--serif);
+        font-size: 13.5px;
+        letter-spacing: 0.16em;
+        padding: 6px 13px 6px 15px;
+        border-radius: 999px;
+        color: var(--paper-dim);
+        transition: background 0.3s, color 0.3s;
+        white-space: nowrap;
+      }
+      .seg button:hover {
+        color: var(--paper);
+      }
+      .seg button.on {
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .seg.small button {
+        font-family: var(--sans);
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        padding: 5px 11px;
+      }
+      .seg .lbl {
+        align-self: center;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--paper-dim);
+        padding: 0 8px 0 12px;
+      }
+
+      #map {
+        position: absolute;
+        right: clamp(12px, 2.4vw, 32px);
+        bottom: clamp(12px, 2.4vw, 28px);
+        width: 236px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: var(--glass);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.28);
+        transition: opacity 0.5s;
+      }
+      #map canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        cursor: zoom-in;
+      }
+      #map.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #bigmap {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        place-items: center;
+        background: rgba(10, 12, 13, 0.72);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+      #bigmap.on {
+        display: grid;
+      }
+      #bigmap .sheet {
+        position: relative;
+        background: #efe5cf;
+        color: #2a2622;
+        border-radius: 6px;
+        padding: 18px 18px 14px;
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+        max-width: 94vw;
+      }
+      #bigmap canvas {
+        display: block;
+        /* 1180 × 1024 sheet: fit the viewport height as well as its width */
+        width: min(86vw, calc((100vh - 190px) * 1.152), 1000px);
+        height: auto;
+        border-radius: 3px;
+        cursor: crosshair;
+      }
+      #bigmap h2 {
+        font-family: var(--serif);
+        font-size: 20px;
+        letter-spacing: 0.3em;
+        margin: 0 0 10px 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+      #bigmap h2 small {
+        font-family: var(--sans);
+        font-weight: 400;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        color: #6b6258;
+      }
+      #legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+        margin-top: 10px;
+        font-size: 12.5px;
+        letter-spacing: 0.06em;
+        color: #4a433b;
+      }
+      #legend i {
+        display: inline-block;
+        width: 18px;
+        height: 4px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+
+      #hint {
+        position: absolute;
+        left: 50%;
+        bottom: clamp(14px, 3vh, 30px);
+        transform: translateX(-50%);
+        font-size: 12.5px;
+        letter-spacing: 0.1em;
+        color: var(--paper);
+        background: var(--glass);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 18px;
+        white-space: nowrap;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition: opacity 1s;
+        max-width: calc(100vw - 24px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #hint.off {
+        opacity: 0;
+      }
+      #status {
+        position: absolute;
+        left: clamp(16px, 3vw, 40px);
+        bottom: clamp(14px, 3vh, 30px);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        color: var(--paper-dim);
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      #compass {
+        font-family: var(--serif);
+        font-size: 14px;
+        color: var(--paper);
+        width: 2.2em;
+      }
+      #toast {
+        position: fixed;
+        z-index: 40;
+        left: 50%;
+        top: 38%;
+        transform: translate(-50%, -50%);
+        font-family: var(--serif);
+        font-size: 17px;
+        letter-spacing: 0.3em;
+        padding: 14px 26px 14px 30px;
+        background: var(--glass);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        opacity: 0;
+        transition: opacity 0.5s;
+        pointer-events: none;
+        text-align: center;
+      }
+      #toast.on {
+        opacity: 1;
+      }
+      #help {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        place-items: center;
+        background: rgba(10, 12, 13, 0.66);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+      #help.on {
+        display: grid;
+      }
+      #help .sheet {
+        width: min(560px, 92vw);
+        background: rgba(18, 21, 22, 0.94);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 26px 30px 24px;
+      }
+      #help h2 {
+        font-family: var(--serif);
+        font-size: 22px;
+        letter-spacing: 0.3em;
+        margin: 0 0 16px;
+      }
+      #help table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+        letter-spacing: 0.05em;
+      }
+      #help td {
+        padding: 7px 0;
+        border-top: 1px solid var(--line);
+        vertical-align: top;
+      }
+      #help td:first-child {
+        width: 44%;
+        white-space: nowrap;
+      }
+      #help p {
+        font-size: 12.5px;
+        line-height: 1.8;
+        color: var(--paper-dim);
+        margin: 14px 0 0;
+      }
+      .close {
+        position: absolute;
+        right: 12px;
+        top: 8px;
+        font-size: 22px;
+        line-height: 1;
+        opacity: 0.6;
+      }
+      .close:hover {
+        opacity: 1;
+      }
+      #fade {
+        position: fixed;
+        inset: 0;
+        background: #0b0d0e;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.7s ease;
+        z-index: 15;
+      }
+      #fade.on {
+        opacity: 1;
+      }
+
+      /* touch */
+      #touch {
+        display: none;
+      }
+      body.touch #touch {
+        display: block;
+      }
+      #stick {
+        position: absolute;
+        left: 26px;
+        bottom: 84px;
+        width: 108px;
+        height: 108px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: rgba(15, 18, 19, 0.28);
+      }
+      #stick i {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        margin: -22px;
+        border-radius: 50%;
+        background: rgba(244, 236, 220, 0.5);
+      }
+      #tbtn {
+        position: absolute;
+        right: 22px;
+        bottom: 260px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      #tbtn button {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--glass);
+        font-family: var(--serif);
+        font-size: 15px;
+      }
+      body.touch #hint {
+        display: none;
+      }
+      body.touch .keys {
+        /* keeps its space: nothing may move under a finger between touch and click */
+        visibility: hidden;
+      }
+      @media (max-width: 760px) {
+        .intro-inner {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .title h1 {
+          font-size: clamp(44px, 7vh, 64px);
+          flex-direction: row;
+          letter-spacing: 0.1em;
+        }
+        .title {
+          flex-direction: column;
+        }
+        .title .side {
+          flex-direction: row;
+        }
+        .title .en {
+          writing-mode: horizontal-tb;
+        }
+        .date-note {
+          display: none;
+        }
+        .seal {
+          writing-mode: horizontal-tb;
+          padding: 4px 9px 3px;
+          letter-spacing: 0.2em;
+        }
+        .title .side {
+          gap: 12px;
+          padding-top: 2px;
+        }
+        .copy .kicker {
+          margin-top: 6px;
+        }
+        #place {
+          top: 148px;
+        }
+        #map {
+          width: 150px;
+          bottom: 70px;
+        }
+        body.touch #map {
+          bottom: clamp(12px, 2.4vw, 28px);
+        }
+        .seg button {
+          padding: 6px 9px 6px 11px;
+          font-size: 12.5px;
+        }
+        #status {
+          display: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #intro,
+        #hud,
+        #place,
+        #fade {
+          transition-duration: 0.01s;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene" tabindex="0" aria-label="青島八大關三維景觀"></canvas>
+
+    <div id="hud">
+      <div id="place" aria-live="polite">
+        <div class="bar"></div>
+        <div>
+          <div class="name"></div>
+          <div class="en"></div>
+          <div class="note"></div>
+        </div>
+      </div>
+
+      <div id="controls" class="panel">
+        <div class="seg" id="times" role="group" aria-label="時辰"></div>
+        <div class="seg small" id="seasons" role="group" aria-label="季節"><span class="lbl">四季</span></div>
+        <div class="seg small" id="tools" role="group" aria-label="工具">
+          <button data-act="tour" title="自動導覽 (T)">導覽</button>
+          <button data-act="fly" title="飛行 / 步行 (F)">飛行</button>
+          <button data-act="sound" title="環境聲 (N)">聲音</button>
+          <button data-act="quality" title="畫質">畫質·高</button>
+          <button data-act="help" title="操作說明 (H)">說明</button>
+        </div>
+      </div>
+
+      <div id="map" class="panel" title="點擊放大地圖 (M)"><canvas width="472" height="410"></canvas></div>
+      <div id="status"><span id="compass">北</span><span id="modeLabel">步行</span><span id="fps"></span></div>
+      <div id="hint">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>移動 &nbsp; 滑鼠 環顧 &nbsp; <kbd>Shift</kbd>快走 &nbsp; <kbd>F</kbd>飛行 &nbsp; <kbd>1</kbd>–<kbd>4</kbd>時辰 &nbsp; <kbd>M</kbd>地圖
+      </div>
+      <div id="touch">
+        <div id="stick"><i></i></div>
+        <div id="tbtn" class="panel">
+          <button data-touch="up">升</button>
+          <button data-touch="down">降</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="fade"></div>
+    <div id="toast" role="status"></div>
+
+    <div id="intro" class="loading">
+      <div class="intro-inner">
+        <div class="title">
+          <h1 aria-label="八大關"><span>八</span><span>大</span><span>關</span></h1>
+          <div class="side">
+            <span class="seal">青島</span>
+            <span class="en">Badaguan · Qingdao</span>
+          </div>
+        </div>
+        <div class="copy">
+          <div class="kicker">The Eight Great Passes</div>
+          <p class="lead">紅瓦綠樹，碧海藍天。<br />十條以關隘為名的馬路，一關一樹，一路一景。</p>
+          <p class="sub">深秋午後，居庸關路的銀杏正黃，嘉峪關路的楓葉正紅；沿著紫荊關路的雪松走下去，就是太平灣的海。</p>
+          <button id="start" disabled>步入八大關</button>
+          <div id="progress"><div id="loadbar"></div></div>
+          <div id="loadlabel">準備中…</div>
+          <div class="keys">
+            <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>移動</span>
+            <span>滑鼠 環顧</span>
+            <span><kbd>Shift</kbd>快走</span>
+            <span><kbd>F</kbd>飛行</span>
+            <span><kbd>T</kbd>自動導覽</span>
+          </div>
+        </div>
+      </div>
+      <div class="date-note">36°03′N 120°21′E<br />Shinan District, Qingdao</div>
+    </div>
+
+    <div id="bigmap">
+      <div class="sheet">
+        <button class="close" data-close="bigmap" aria-label="關閉">×</button>
+        <h2>八大關 · 一關一樹 <small>點擊地圖任一處可前往 · Esc 關閉</small></h2>
+        <canvas width="1180" height="1024"></canvas>
+        <div id="legend"></div>
+      </div>
+    </div>
+
+    <div id="help">
+      <div class="sheet" style="position: relative">
+        <button class="close" data-close="help" aria-label="關閉">×</button>
+        <h2>操作說明</h2>
+        <table>
+          <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向鍵</td><td>前後左右移動</td></tr>
+          <tr><td>滑鼠（點擊畫面鎖定）</td><td>環顧四周；<kbd>Esc</kbd> 釋放滑鼠</td></tr>
+          <tr><td><kbd>Shift</kbd></td><td>快走 / 飛行加速</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>跳躍（飛行時上升）</td></tr>
+          <tr><td><kbd>F</kbd></td><td>切換 步行 / 飛行；飛行時 <kbd>E</kbd> 升 <kbd>Q</kbd> 降</td></tr>
+          <tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd></td><td>晨霧 · 晴午 · 斜陽 · 夜色</td></tr>
+          <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>切換四季：春 · 夏 · 秋 · 冬</td></tr>
+          <tr><td><kbd>T</kbd></td><td>自動導覽（再按一次接手）</td></tr>
+          <tr><td><kbd>M</kbd> / <kbd>N</kbd> / <kbd>P</kbd></td><td>地圖 / 環境聲 / 隱藏介面拍照</td></tr>
+        </table>
+        <p>觸控裝置：左下搖桿移動，右側拖曳環顧。<br />場景為依實地格局濃縮的藝術再現，並非測繪等級的地圖。</p>
+      </div>
+    </div>
+
+    <script src="./dist/app.js"></script>
+  </body>
+</html>

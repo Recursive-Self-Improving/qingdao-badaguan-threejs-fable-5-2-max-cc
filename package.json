@@ -1,0 +1,19 @@
+{
+  "name": "qingdao-badaguan-threejs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "青島八大關 — an atmospheric, explorable three.js landscape of Badaguan, Qingdao",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "dev": "node tools/build.mjs --dev",
+    "start": "node tools/build.mjs --serve"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.65.0"
+  }
+}
